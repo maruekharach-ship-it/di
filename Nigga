@@ -1,0 +1,313 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- สร้าง ScreenGui หลัก
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "EncyclopediaGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+-- ==========================================
+-- 1. ฐานข้อมูลสารานุกรม
+-- ==========================================
+local database = {
+	{ title = "ระบบสุริยะ (Solar System)", category = "ดาราศาสตร์", content = "ระบบสุริยะประกอบด้วยดวงอาทิตย์และวัตถุที่โคจรรอบดวงอาทิตย์ 8 ดวง ได้แก่ ดาวพุธ ดาวศุกร์ โลก ดาวอังคาร ดาวพฤหัสบดี ดาวเสาร์ ดาวยูเรนัส และดาวเนปจูน" },
+	{ title = "ปฏิกิริยาเคมี (Chemical Reaction)", category = "วิทยาศาสตร์", content = "กระบวนการที่สารเคมีเกิดการเปลี่ยนแปลงและกลายเป็นสารใหม่ที่มีสมบัติแตกต่างไปจากเดิม โดยมีการจัดเรียงตัวใหม่ของอะตอม" },
+	{ title = "สงครามโลกครั้งที่ 2", category = "ประวัติศาสตร์", content = "ความขัดแย้งระดับโลกครั้งใหญ่ที่สุด เริ่มต้นขึ้นในปี ค.ศ. 1939 และสิ้นสุดลงในปี ค.ศ. 1945 โดยแบ่งออกเป็นฝ่ายสัมพันธมิตรและฝ่ายอักษะ" },
+	{ title = "อัลกอริทึม (Algorithm)", category = "เทคโนโลยี", content = "ขั้นตอนวิธีหรือลำดับความคิดในการแก้ปัญหาหรือการทำงานอย่างใดอย่างหนึ่งที่มีความชัดเจนและสามารถปฏิบัติงานตามได้" },
+	{ title = "แรงโน้มถ่วง (Gravity)", category = "ฟิสิกส์", content = "แรงดึงดูดระหว่างมวลของวัตถุต่างๆ ซึ่งทำให้วัตถุตกลงสู่พื้นโลกและทำให้ดาวเคราะห์โคจรรอบดวงอาทิตย์" },
+}
+
+-- ==========================================
+-- 2. สร้างปุ่มเปิด/ปิดหน้าต่าง (Toggle Button)
+-- ==========================================
+local toggleButton = Instance.new("TextButton")
+toggleButton.Name = "ToggleButton"
+toggleButton.Size = UDim2.new(0, 140, 0, 45)
+toggleButton.Position = UDim2.new(1, -160, 1, -65)
+toggleButton.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.TextSize = 16
+toggleButton.Font = Enum.Font.GothamBold
+toggleButton.Text = "📖 สารานุกรม"
+toggleButton.Parent = screenGui
+
+local btnCorner = Instance.new("UICorner")
+btnCorner.CornerRadius = UDim.new(0, 10)
+btnCorner.Parent = toggleButton
+
+-- ==========================================
+-- 3. สร้างหน้าต่างหลัก (Main Window)
+-- ==========================================
+local mainWindow = Instance.new("Frame")
+mainWindow.Name = "MainWindow"
+mainWindow.Size = UDim2.new(0, 500, 0, 400)
+mainWindow.Position = UDim2.new(0.5, -250, 0.5, -200)
+mainWindow.BackgroundColor3 = Color3.fromRGB(24, 24, 32)
+mainWindow.BorderSizePixel = 0
+mainWindow.Visible = false
+mainWindow.Parent = screenGui
+
+local windowCorner = Instance.new("UICorner")
+windowCorner.CornerRadius = UDim.new(0, 12)
+windowCorner.Parent = mainWindow
+
+-- ส่วนหัว (Header สำหรับลากย้ายหน้าต่าง)
+local header = Instance.new("Frame")
+header.Name = "Header"
+header.Size = UDim2.new(1, 0, 0, 45)
+header.BackgroundColor3 = Color3.fromRGB(32, 32, 42)
+header.BorderSizePixel = 0
+header.Parent = mainWindow
+
+local headerCorner = Instance.new("UICorner")
+headerCorner.CornerRadius = UDim.new(0, 12)
+headerCorner.Parent = header
+
+local headerFix = Instance.new("Frame")
+headerFix.Size = UDim2.new(1, 0, 0, 10)
+headerFix.Position = UDim2.new(0, 0, 1, -10)
+headerFix.BackgroundColor3 = Color3.fromRGB(32, 32, 42)
+headerFix.BorderSizePixel = 0
+headerFix.Parent = header
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, -100, 1, 0)
+titleLabel.Position = UDim2.new(0, 15, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextSize = 16
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.Text = "📚 สารานุกรมออนไลน์"
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = header
+
+-- ปุ่มปิด (Close Button)
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0, 35, 0, 35)
+closeButton.Position = UDim2.new(1, -40, 0.5, -17.5)
+closeButton.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.TextSize = 14
+closeButton.Font = Enum.Font.GothamBold
+closeButton.Text = "✕"
+closeButton.Parent = header
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 8)
+closeCorner.Parent = closeButton
+
+-- ==========================================
+-- 4. ช่องค้นหา (Search Bar) และพื้นที่แสดงผล
+-- ==========================================
+local searchBox = Instance.new("TextBox")
+searchBox.Name = "SearchBox"
+searchBox.Size = UDim2.new(1, -30, 0, 38)
+searchBox.Position = UDim2.new(0, 15, 0, 55)
+searchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 52)
+searchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+searchBox.PlaceholderText = "🔍 พิมพ์คำที่ต้องการค้นหา..."
+searchBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 160)
+searchBox.TextSize = 14
+searchBox.Font = Enum.Font.Gotham
+searchBox.ClearTextOnFocus = false
+searchBox.Parent = mainWindow
+
+local searchCorner = Instance.new("UICorner")
+searchCorner.CornerRadius = UDim.new(0, 8)
+searchCorner.Parent = searchBox
+
+-- ScrollingFrame สำหรับแสดงผลคำที่ตรงกับที่พิมพ์
+local scrollingFrame = Instance.new("ScrollingFrame")
+scrollingFrame.Size = UDim2.new(1, -30, 1, -110)
+scrollingFrame.Position = UDim2.new(0, 15, 0, 105)
+scrollingFrame.BackgroundTransparency = 1
+scrollingFrame.BorderSizePixel = 0
+scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scrollingFrame.ScrollBarThickness = 6
+scrollingFrame.Parent = mainWindow
+
+local uiLayout = Instance.new("UIListLayout")
+uiLayout.SortOrder = Enum.SortOrder.LayoutOrder
+uiLayout.Padding = UDim.new(0, 8)
+uiLayout.Parent = scrollingFrame
+
+-- ==========================================
+-- 5. ฟังก์ชันค้นหาและแสดงผลตามตัวอักษรที่พิมพ์
+-- ==========================================
+local function renderSearch(query)
+	-- ล้างรายการเก่าทิ้งก่อน
+	for _, child in ipairs(scrollingFrame:GetChildren()) do
+		if child:IsA("Frame") then
+			child:Destroy()
+		end
+	end
+
+	query = string.lower(query or "")
+
+	-- หากช่องค้นหาว่าง ให้แสดงข้อความแนะนำ
+	if query == "" then
+		local hintCard = Instance.new("Frame")
+		hintCard.Size = UDim2.new(1, 0, 0, 50)
+		hintCard.BackgroundColor3 = Color3.fromRGB(34, 34, 46)
+		hintCard.Parent = scrollingFrame
+
+		local hintCorner = Instance.new("UICorner")
+		hintCorner.CornerRadius = UDim.new(0, 8)
+		hintCorner.Parent = hintCard
+
+		local hintText = Instance.new("TextLabel")
+		hintText.Size = UDim2.new(1, 0, 1, 0)
+		hintText.BackgroundTransparency = 1
+		hintText.TextColor3 = Color3.fromRGB(150, 150, 160)
+		hintText.TextSize = 14
+		hintText.Font = Enum.Font.Gotham
+		hintText.Text = "พิมพ์ตัวอักษรหรือคำที่คุณต้องการค้นหา..."
+		hintText.Parent = hintCard
+		return
+	end
+
+	local foundCount = 0
+
+	-- วนลูปค้นหาคำที่ตรงกับตัวอักษรที่พิมพ์ในฐานข้อมูล
+	for _, item in ipairs(database) do
+		-- ตรวจสอบว่าคำที่พิมพ์ไปอยู่ใน ชื่อ, หมวดหมู่ หรือ เนื้อหา หรือไม่
+		if string.find(string.lower(item.title), query) or 
+			string.find(string.lower(item.category), query) or
+			string.find(string.lower(item.content), query) then
+
+			foundCount = foundCount + 1
+
+			-- สร้างการ์ดแสดงผลคำที่ตรงกัน
+			local card = Instance.new("Frame")
+			card.Size = UDim2.new(1, 0, 0, 85)
+			card.BackgroundColor3 = Color3.fromRGB(34, 34, 46)
+			card.Parent = scrollingFrame
+
+			local cardCorner = Instance.new("UICorner")
+			cardCorner.CornerRadius = UDim.new(0, 8)
+			cardCorner.Parent = card
+
+			local catLabel = Instance.new("TextLabel")
+			catLabel.Size = UDim2.new(1, -20, 0, 20)
+			catLabel.Position = UDim2.new(0, 10, 0, 8)
+			catLabel.BackgroundTransparency = 1
+			catLabel.TextColor3 = Color3.fromRGB(100, 180, 255)
+			catLabel.TextSize = 12
+			catLabel.Font = Enum.Font.GothamBold
+			catLabel.Text = "📁 หมวดหมู่: " .. item.category
+			catLabel.TextXAlignment = Enum.TextXAlignment.Left
+			catLabel.Parent = card
+
+			local itemTitle = Instance.new("TextLabel")
+			itemTitle.Size = UDim2.new(1, -20, 0, 22)
+			itemTitle.Position = UDim2.new(0, 10, 0, 28)
+			itemTitle.BackgroundTransparency = 1
+			itemTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+			itemTitle.TextSize = 14
+			itemTitle.Font = Enum.Font.GothamBold
+			itemTitle.Text = item.title
+			itemTitle.TextXAlignment = Enum.TextXAlignment.Left
+			itemTitle.Parent = card
+
+			local itemContent = Instance.new("TextLabel")
+			itemContent.Size = UDim2.new(1, -20, 0, 25)
+			itemContent.Position = UDim2.new(0, 10, 0, 52)
+			itemContent.BackgroundTransparency = 1
+			itemContent.TextColor3 = Color3.fromRGB(180, 180, 190)
+			itemContent.TextSize = 12
+			itemContent.Font = Enum.Font.Gotham
+			itemContent.Text = item.content
+			itemContent.TextWrapped = true
+			itemContent.TextXAlignment = Enum.TextXAlignment.Left
+			itemContent.Parent = card
+		end
+	end
+
+	-- หากค้นหาไม่พบข้อมูล
+	if foundCount == 0 then
+		local notFoundCard = Instance.new("Frame")
+		notFoundCard.Size = UDim2.new(1, 0, 0, 50)
+		notFoundCard.BackgroundColor3 = Color3.fromRGB(34, 34, 46)
+		notFoundCard.Parent = scrollingFrame
+
+		local notFoundCorner = Instance.new("UICorner")
+		notFoundCorner.CornerRadius = UDim.new(0, 8)
+		notFoundCorner.Parent = notFoundCard
+
+		local notFoundText = Instance.new("TextLabel")
+		notFoundText.Size = UDim2.new(1, 0, 1, 0)
+		notFoundText.BackgroundTransparency = 1
+		notFoundText.TextColor3 = Color3.fromRGB(220, 100, 100)
+		notFoundText.TextSize = 14
+		notFoundText.Font = Enum.Font.Gotham
+		notFoundText.Text = 'ไม่พบคำว่า "' .. query .. '" ในระบบสารานุกรม'
+		notFoundText.Parent = notFoundCard
+	end
+end
+
+-- ==========================================
+-- 6. ระบบเปิด/ปิด หน้าต่าง
+-- ==========================================
+local isOpen = false
+
+local function toggleWindow()
+	isOpen = not isOpen
+	mainWindow.Visible = isOpen
+	if isOpen then
+		renderSearch(searchBox.Text) -- โหลดสถานะปัจจุบันตอนเปิด
+	end
+end
+
+toggleButton.MouseButton1Click:Connect(toggleWindow)
+closeButton.MouseButton1Click:Connect(toggleWindow)
+
+-- ==========================================
+-- 7. ระบบค้นหาแบบเรียลไทม์ (เมื่อพิมพ์ตัวอักษรลงไป)
+-- ==========================================
+searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+	renderSearch(searchBox.Text)
+end)
+
+-- ==========================================
+-- 8. ระบบเคลื่อนย้ายหน้าต่าง (Draggable Header)
+-- ==========================================
+local dragging = false
+local dragInput, mousePos, framePos
+
+header.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		mousePos = input.Position
+		framePos = mainWindow.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+header.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		local delta = input.Position - mousePos
+		mainWindow.Position = UDim2.new(
+			framePos.X.Scale, 
+			framePos.X.Offset + delta.X, 
+			framePos.Y.Scale, 
+			framePos.Y.Offset + delta.Y
+		)
+	end
+end)
